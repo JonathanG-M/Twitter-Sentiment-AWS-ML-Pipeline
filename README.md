@@ -8,5 +8,5 @@
 
   and visualized using Quicksight.
 
-![Alt text](C:\Users\jonat\OneDrive\Documents\GitHub\Twitter-Sentiment-AWS-ML-Pipeline\img\Twitter Sentiment Analysis.png)
+![Alt text](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/img/Twitter%20Sentiment%20Analysis.png)
 
