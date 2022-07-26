@@ -1,5 +1,5 @@
 # Twitter-Sentiment-AWS-ML-Pipeline
- This project looks at sentiments from Tweets discussing Russian and Ukrain in light of the Russo-Ukrainian conflict. The goal is to get a sense of global public opinion towards Russia and Ukraine. <br><br>
+ This project looks at sentiments from Tweets discussing Russian and Ukraine in light of the Russo-Ukrainian conflict. The goal is to get a sense of global public opinion towards Russia and Ukraine. <br><br>
  Project architecture: 
  1. <b>Injestion.</b> Data is injested from <b>Twitter's V2 API</b> pushed to <b>S3</b> via <b>Firehose</b> as JSONs,
  1. <b>Transformation.</b> JSONs are batch processed with an <b>AWS Lambda</b>, Tweet are translated to English and sentiments labeled using pre-trained <b>HuggingFace</b> models deployed to <b>SageMaker</b> endpoints, and exported Parquets,
