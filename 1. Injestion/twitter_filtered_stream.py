@@ -133,13 +133,13 @@ def set_rules(delete):
     # CREATE rules. 
     # Rules can be adjusted manually here. Review Twitter V2 API documents for rule syntax.
     rules = [{'value': '(ukraine OR ukraina OR Украина OR україни OR zelenski) '
-                            '-russia -rossiya -Россия -russie -Росія -putin '
-                            '-is:retweet sample:10',
-                    'tag': 'ukraine'},
-                    {'value': '(russia OR rossiya OR Россия OR russie  OR putin) '
-                            '-ukraine -ukraina -Украина -україни -zelenski '
-                            '-is:retweet sample:10',
-                    'tag': 'russia'}]
+                       '-russia -rossiya -Россия -russie -Росія -putin '
+                       '-is:retweet sample:10',
+             'tag': 'ukraine'},
+            {'value': '(russia OR rossiya OR Россия OR russie  OR putin) '
+                      '-ukraine -ukraina -Украина -україни -zelenski '
+                      '-is:retweet sample:10',
+             'tag': 'russia'}]
     
     # CREATE dictionary with rules API payload
     payload = {"add": rules}
