@@ -1,0 +1,112 @@
+{
+    "data": {
+        "author_id": "829647236",
+        "context_annotations": [
+            {
+                "domain": {
+                    "id": "123",
+                    "name": "Ongoing News Story",
+                    "description": "Ongoing News Stories like 'Brexit'"
+                },
+                "entity": {
+                    "id": "1484601166080081920",
+                    "name": "Russo-Ukrainian conflict"
+                }
+            },
+            {
+                "domain": {
+                    "id": "10",
+                    "name": "Person",
+                    "description": "Named people in the world like Nelson Mandela"
+                },
+                "entity": {
+                    "id": "864931126132985856",
+                    "name": "Vladimir Putin",
+                    "description": "President of Russia Vladimir Putin"
+                }
+            },
+            {
+                "domain": {
+                    "id": "35",
+                    "name": "Politician",
+                    "description": "Politicians in the world, like Joe Biden"
+                },
+                "entity": {
+                    "id": "864931126132985856",
+                    "name": "Vladimir Putin",
+                    "description": "President of Russia Vladimir Putin"
+                }
+            }
+        ],
+        "created_at": "2022-05-17T15:08:53.000Z",
+        "geo": {
+            "place_id": "9b108a0c2513daeb"
+        },
+        "id": "1526580520355778560",
+        "lang": "en",
+        "text": "@Uliana_IN @OtsA20 @Northern_Sentry Stalin, Putin, Tsars, always the same result. So it has to be about the people."
+    },
+    "includes": {
+        "users": [
+            {
+                "id": "829647236",
+                "location": "Lappeenranta, Suomi",
+                "name": "Petri Mäkelä",
+                "public_metrics": {
+                    "followers_count": 61510,
+                    "following_count": 2774,
+                    "tweet_count": 94595,
+                    "listed_count": 1543
+                },
+                "username": "pmakela1"
+            },
+            {
+                "id": "4802010753",
+                "name": "Uliana",
+                "public_metrics": {
+                    "followers_count": 469,
+                    "following_count": 840,
+                    "tweet_count": 6134,
+                    "listed_count": 10
+                },
+                "username": "Uliana_IN"
+            },
+            {
+                "id": "1205780796960837633",
+                "name": "OtsA",
+                "public_metrics": {
+                    "followers_count": 239,
+                    "following_count": 306,
+                    "tweet_count": 8511,
+                    "listed_count": 2
+                },
+                "username": "OtsA20"
+            },
+            {
+                "id": "1483731527674601473",
+                "location": "Tromsø, Norge",
+                "name": "Northern_Sentry",
+                "public_metrics": {
+                    "followers_count": 3033,
+                    "following_count": 684,
+                    "tweet_count": 2284,
+                    "listed_count": 51
+                },
+                "username": "Northern_Sentry"
+            }
+        ],
+        "places": [
+            {
+                "country_code": "FI",
+                "full_name": "Lappeenranta, Suomi",
+                "id": "9b108a0c2513daeb"
+            }
+        ]
+    },
+    "matching_rules": [
+        {
+            "id": "1526235282076483585",
+            "tag": "ukraine"
+        }
+    ]
+}
