@@ -1,5 +1,5 @@
 # Twitter-Sentiment-AWS-ML-Pipeline <a name="home"></a>
- This project looks at sentiments from Tweets discussing Russian and Ukraine in light of the Russo-Ukrainian conflict. The goal is to get a sense of global public opinion towards Russia and Ukraine. Tweet data is collected, labaled, and analyzed in continuous near-real time. <br><br>
+ This project looks at sentiments from Tweets discussing Russian and Ukraine in light of the Russo-Ukrainian conflict. The goal is to get a sense of global public opinion towards Russia and Ukraine over time and by region, language, etc. Tweet data is collected, labeled, and analyzed in continuous near-real time. <br><br>
 ## Table of contents 
  
  1. [<b>Ingestion.</b>](#ingestion) Data is ingested from <b>Twitter's V2 API</b> pushed to <b>S3</b> via <b>Firehose</b> as JSONs,
