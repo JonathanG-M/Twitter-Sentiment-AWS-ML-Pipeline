@@ -31,7 +31,7 @@
 ### Data Dictionary<a name="ingestion_data_dict"></a>
 [Back to top](#home)
 
-See [raw_tweet_sample.json](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/1.%20Injestion/sample/raw_tweet_sample.json) for a sample tweet object.
+See [raw_tweet_sample.json](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/1.%20Ingestion/sample/raw_tweet_sample.json) for a sample tweet object.
 <details>
 <summary>Show/Hide data dictionary</summary>
 <br>
@@ -56,7 +56,7 @@ See [raw_tweet_sample.json](https://github.com/JonathanG-M/Twitter-Sentiment-AWS
 </details>
 
 ### Code<a name="ingestion_code"></a> 
-[Link to client twitter_filtered_stream.py](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/1.%20Injestion/twitter_filtered_stream.py)
+[Link to client twitter_filtered_stream.py](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/1.%20Ingestion/twitter_filtered_stream.py)
 
 The following syntax show's how 2 filtering rules are define to accomplish points 1. two separate streams, 2. exclusion of retweets, and 3. throttling:
 
