@@ -36,7 +36,7 @@ See [raw_tweet_sample.json](https://github.com/JonathanG-M/Twitter-Sentiment-AWS
 <summary>Show/Hide data dictionary</summary>
 <br>
 
-* <b>data</b>: Tweet data 
+* <b>data</b>: Tweet data object
 * <b>data > author_id</b>: Unique user ID 
 * <b>data > context_annotation</b>: Twitter's own named entity recognition
 * <b>data > created_at</b>: Tweet creation date
@@ -73,7 +73,105 @@ The following syntax how the tweet object's contents are requested from the Twit
 [<u>Back to top</u>](#home)
 <br>
 
-* Something else
+### Key tranformation considerations<a name="key_transformation_considerations"></a>
+[Back to top](#home)
+1. <b>Schedule.</b> The transformation script runs every 5 minutes when Firehose generates a new file and triggers an event in Lambda.
+1. <b>Translation.</b> Tweet texts are translated into English from 15 other languages using a pre-trained translation models from the Hugging Face Hub and loaded into a SageMaker endpoint. See my [SageMaker notebook](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/a.%20Sagemaker%20notebooks/translator_mme_deploy.ipynb) for translation endpoint details.
+1. <b>Sentiment labeling.</b> English and translated are labeled as positive, neutral, or negative using a pre-trained sentiment analysis model from the Hugging Fave Hub and loaded into a SageMaker endpoint. See my [SageMaker notebook](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/a.%20Sagemaker%20notebooks/hf_sentiment_model_deploy.ipynb) for sentiment analysis endpoint details.
+1. <b>Data.</b> 11 columns are outputed in Parquet format. These include tweet and user identifiers, translated and raw tweets, sentiment scores, as well as language and geo data for analyses. See the [data dictionary](#transformation_data_dict) below for full field details.
+1. <b>Backfilling.</b> A second script identifies and processes data missed by the Lambda transformation following the above considerations. The backfill script can be found [here](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/c.%20EC2%20backfill/twitter_backfill_client.py), and the supporting Athena script can be found [here](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/c.%20EC2%20backfill/get_processed_files.sql).
+
+
+### Data Dictionary<a name="transformation_data_dict"></a>
+[Back to top](#home)
+
+See [parquet_sample_file.csv](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/sample/parquet_sample_file.csv) for a sample of the labeled output. (Note. The sample is in CSV format for viewing purposes)
+<details>
+<summary>Show/Hide data dictionary</summary>
+<br>
+
+* <b>ts</b>: Timestamp of the tweet's creation
+* <b>tweet_id</b>: Tweet unique id
+* <b>author_id</b>: Author unique id
+* <b>text</b>: The actual Tweet text
+* <b>lang</b>: Language detected by Twitter
+* <b>country_code</b>: ISO country code for users sharing location
+* <b>location</b>: Location data manually entered by user. Low reliability since users can enter anything (USA, Atlantis, Mom's basemend, etc.)
+* <b>tag</b>: Tag of matching filtering rules to use as a feature. This is how data is tagged in point 1. under [key ingestion considerations](#key_ingestion_considerations)
+* <b>translated_text</b>: Translated tweet text
+* <b>sentiment</b>: Sentiment polarity labeled as either Positive, Neutral, or Negative
+* <b>score</b>: Sentiment score with greater values indicating greater confidence in the sentiment label
+    
+</details>
+
+### Code<a name="transformation_code"></a> 
+[Link to client Lambda_ETL.py](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/b.%20Lambda/Lambda_ETL.py)
+
+The two key steps in the transformation; translation and sentiment analysis:
+
+<b>Translation using SageMaker endpoint</b>
+
+```python
+# INITIALIZE Sagemaker client
+sm = boto3.client('runtime.sagemaker')
+
+# CREATE UDF for translation
+def translate_tweet(text, lang):
+
+    # CREATE payload object for Tweet text to translate
+    data = {'inputs':text}
+
+    # ENCODE payload
+    payload = json.dumps(data).encode()
+
+    # REQUEST payload translation object for specified language (lang)
+    response = sm.invoke_endpoint(EndpointName=TRANSLATION_ENDPOINT_NAME,
+                              ContentType='application/json',
+                              Body=payload,
+                              TargetModel = model_dict[lang])
+
+    # EXTRACT translated text
+    result = json.loads(response['Body'].read().decode())
+    translated_text = result[0]['translation_text']
+
+    return translated_text
+    
+# REQUEST TRANSLATED TWEETS FROM SAGEMAKER ENDPOINTS
+df['translated_text'] = df.apply(lambda x: x['text'] if x['lang'] == 'en' else  translate_tweet(x['text'], x['lang']), axis=1)  
+```
+
+<b>Sentiment labeling using SageMaker endpoint</b>
+
+```python
+# INITIALIZE Sagemaker client
+sm = boto3.client('runtime.sagemaker')
+
+# CREATE UDF for sentiment scoring
+def get_sentiment(text):
+
+    # CREATE payload object for sentiment analysis
+    data = {'inputs':text}
+
+    # ENCODE payload
+    payload = json.dumps(data).encode()
+
+    # REQUEST sentiment score
+    response = sm.invoke_endpoint(EndpointName=SENTIMENT_ENDPOINT_NAME,
+                  ContentType='application/json',
+                  Body=payload)
+
+    # EXTRACT sentiment & score
+    result = json.loads(response['Body'].read().decode())
+    sentiment, score = result[0]['label'], result[0]['score']
+
+    return sentiment, score
+
+# REQUEST SENTIMENT SCORES FROM SAGEMAKER ENDPOINT
+sentiment_tuples = df['translated_text'].apply(get_sentiment)
+df['sentiment'], df['score'] = [tup[0] for tup in sentiment_tuples], [float(tup[1]) for tup in sentiment_tuples]
+```
+
+
 <br><br>
 ## Model Training
 <a name="training"></a>
