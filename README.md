@@ -7,8 +7,10 @@
     1. [Data Dictionary](#ingestion_data_dict)
     1. [Code](#ingestion_code)
  1. [<b>Transformation.</b>](#transformation) JSONs are batch processed with an <b>AWS Lambda</b>, Tweet are translated to English and sentiments labeled using pre-trained <b>HuggingFace</b> models deployed to <b>SageMaker</b> endpoints, and exported Parquets,
-   1. [<b>Backfilling.</b>](#transformation) A 2nd EC2 identifies and backfill data missed by step 2. This instance can be activated/deactivated as needed.
- 1. [<b>Model training</b>.](#training) Parquet files are mounted to a <b>Databricks Delta Table</b>, pre-processed using <b>SparkNLP</b>, and use to develop <b>XGBoost</b> models using parallelization and <b>MLFlow</b>.
+    1. [Key transformation considerations](#key_transformation_considerations)
+    1. [Data Dictionary](#ingestion_data_dict)
+    1. [Code](#ingestion_code)
+ 1. [<b>Model development</b>.](#development) Parquet files are mounted to a <b>Databricks Delta Table</b>, pre-processed using <b>SparkNLP</b>, and use to develop <b>XGBoost</b> models using parallelization and <b>MLFlow</b>.
  1. [<b>Insights</b>.](#insights) The ML enriched data goes from S3 to <b>Quicksight</b> using using <b>Athena</b>. Key ratios are defined using Quicksight's calculated fields and the final data is vizualized through 2 interactive dashboards. 
 <br>
 
@@ -172,12 +174,25 @@ df['sentiment'], df['score'] = [tup[0] for tup in sentiment_tuples], [float(tup[
 
 
 <br><br>
-## Model Training
-<a name="training"></a>
+## Model Development
+<a name="development"></a>
 [<u>Back to top</u>](#home)
 <br>
 
-* Something else
+Next, I wanted to develop an ML model using the sentiment scores labels provided by the pre-trained transformer model. I wanted to see if I could get accuracy high enough to consider replacing the heavy (and expensive) SageMaker endpoint with a model loaded directly on a medium EC2 instance. I also used this as an opportunity to experiment with model development using parallelization in Databricks using PySpark. 
+<br><br>
+
+### Key development considerations<a name="key_development_considerations"></a>
+1. <b>Target.</b> My goal is to predict the tweet sentiment (positive, neutral, or negative) using a multiclass classifier. I would like accuracy to be at least 85% before replacing the transormer model. 
+1. <b>Pipeline.</b> I used SparkNLP to build a pipeline to featurize and vectorize the translated tweet texts.
+1. <b>Training and gridsearch.</b> I decided to train an XGBoost model for this project. I first built a baseline model using default parameters then I used a 5-fold cross validation with gridsearch to find the best set of hyperparameters.
+1. <b>Development progress.</b> I'm currently only hitting around 75% accuracy. I believe additional feature engineering (e.g. adding positive/negative words relative frequency) and expanding the grid search space can get this number to the target 85% accuracy and feel comfortable using this to label novel Tweet data.
+
+### Code<a name="development_code"></a> 
+[Link to client Lambda_ETL.py](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/b.%20Lambda/Lambda_ETL.py)
+
+
+
 <br><br>
 ## Insights
 <a name="insights"></a>
