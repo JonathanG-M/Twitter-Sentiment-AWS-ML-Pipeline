@@ -22,14 +22,14 @@
 <br>
 
 ### Key ingestion considerations<a name="key_ingestion_considerations"></a>
-[Back to top](#home)
+
 1. <b>Two separate streams.</b> I created two mutually exclusive tweet streams; one for Russia and one for Ukraine. This is in order to get a clear feature for the tweet's topic (either Russia or Ukraine) and to have some confidence that any tweet sentiment is specifically about one topic and about the other or a mix of both. 
 1. <b>Exclusion of retweets.</b> In order to avoid applifying the opinions of a few people and to get a more organic representation of public opinion, I decided to omit retweets.
 1. <b>Throttling.</b> I throttle the flow of tweets to keep data continuous and manageable within the contrains of Twitter's 2 million filtered streeam monthly cap, to keep storage cost down while keeping a currently representative sample, and to avoid disconnects from overloading the streaming client.
 1. <b>Data.</b> I grabbed all available fields that could be used to infer geo data including country codes, user-entered locations, coordinates, and languages. I did not filter for any specific language to keep data as broad a spossible. I also collected additional data not used in the current analysis such as user follower counts, Twitter-generate context annotations, and more. 
 
 ### Data Dictionary<a name="ingestion_data_dict"></a>
-[Back to top](#home)
+
 
 See [raw_tweet_sample.json](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/1.%20Ingestion/sample/raw_tweet_sample.json) for a sample tweet object.
 <details>
@@ -74,7 +74,7 @@ The following syntax how the tweet object's contents are requested from the Twit
 <br>
 
 ### Key tranformation considerations<a name="key_transformation_considerations"></a>
-[Back to top](#home)
+
 1. <b>Schedule.</b> The transformation script runs every 5 minutes when Firehose generates a new file and triggers an event in Lambda.
 1. <b>Translation.</b> Tweet texts are translated into English from 15 other languages using a pre-trained translation models from the Hugging Face Hub and loaded into a SageMaker endpoint. See my [SageMaker notebook](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/a.%20Sagemaker%20notebooks/translator_mme_deploy.ipynb) for translation endpoint details.
 1. <b>Sentiment labeling.</b> English and translated are labeled as positive, neutral, or negative using a pre-trained sentiment analysis model from the Hugging Fave Hub and loaded into a SageMaker endpoint. See my [SageMaker notebook](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/a.%20Sagemaker%20notebooks/hf_sentiment_model_deploy.ipynb) for sentiment analysis endpoint details.
@@ -83,7 +83,6 @@ The following syntax how the tweet object's contents are requested from the Twit
 
 
 ### Data Dictionary<a name="transformation_data_dict"></a>
-[Back to top](#home)
 
 See [parquet_sample_file.csv](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/sample/parquet_sample_file.csv) for a sample of the labeled output. (Note. The sample is in CSV format for viewing purposes)
 <details>
