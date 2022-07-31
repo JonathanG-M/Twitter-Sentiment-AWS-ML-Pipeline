@@ -186,11 +186,175 @@ Next, I wanted to develop an ML model using the sentiment scores labels provided
 1. <b>Target.</b> My goal is to predict the tweet sentiment (positive, neutral, or negative) using a multiclass classifier. I would like accuracy to be at least 85% before replacing the transormer model. 
 1. <b>Pipeline.</b> I used SparkNLP to build a pipeline to featurize and vectorize the translated tweet texts.
 1. <b>Training and gridsearch.</b> I decided to train an XGBoost model for this project. I first built a baseline model using default parameters then I used a 5-fold cross validation with gridsearch to find the best set of hyperparameters.
-1. <b>Development progress.</b> I'm currently only hitting around 75% accuracy. I believe additional feature engineering (e.g. adding positive/negative words relative frequency) and expanding the grid search space can get this number to the target 85% accuracy and feel comfortable using this to label novel Tweet data.
+1. <b>Development outcomes.</b> I'm currently hitting around 75% accuracy. I believe additional feature engineering (e.g. adding positive/negative words relative frequency) and expanding the grid search space can get this number to the target 85% accuracy and feel comfortable using this to label novel Tweet data.
 
 ### Code<a name="development_code"></a> 
-[Link to client Lambda_ETL.py](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/2.%20Transformation/b.%20Lambda/Lambda_ETL.py)
+[Link to Databricks notebook](https://github.com/JonathanG-M/Twitter-Sentiment-AWS-ML-Pipeline/blob/main/3.%20Model%20Training/xgboost_sentiment_classifier_.ipynb)
 
+This notebook creates a straightforward pipeline to:
+<b>1.</b> featurize the tweet data using lemmatization, stopword removal, and the creation of 2- and 3-grams, 
+<b>2.</b> vectorize these features using TF-IDF, and 
+<b>3.</b> develop a model using Databrick's implementation of XGBoost.
+<br><br>
+
+<b>1. Featurization pipeline</b>
+```python
+# CONVERT tweet text to spark NLP format
+documentAssembler = DocumentAssembler() \
+     .setInputCol('translated_text') \
+     .setOutputCol('document')
+
+# TOKENIZE tweet text
+tokenizer = Tokenizer() \
+     .setInputCols(['document']) \
+     .setOutputCol('tokenized')
+
+# CLEAN the data with normalizer
+# CREATE patterns to remove
+patterns = ['http', '@\S+', '#', '[^a-zA-Z]', '\s+']
+
+# CLEAN
+normalizer = Normalizer() \
+     .setInputCols(['tokenized']) \
+     .setOutputCol('normalized') \
+     .setLowercase(True) \
+     .setCleanupPatterns(patterns)
+
+# LEMMATIZE cleaned tokens
+lemmatizer = LemmatizerModel.pretrained() \
+    .setInputCols(['normalized']) \
+    .setOutputCol('lemmatized')
+
+# REMOVE stopwords
+# IMPORT stopwords
+nltk.download('stopwords')
+
+# CREATE list of stopwords
+eng_stopwords = stopwords.words('english')
+
+# REMOVE stopwords
+stopwords_cleaner = StopWordsCleaner() \
+     .setInputCols(['lemmatized']) \
+     .setOutputCol('unigrams') \
+     .setStopWords(eng_stopwords)
+
+# CREATE ngrams (1-, 2-, & 3- grams) from lemmatized tokens
+ngrammer = NGramGenerator() \
+    .setInputCols(['unigrams']) \
+    .setOutputCol('ngrams') \
+    .setN(3) \
+    .setEnableCumulative(True) \
+    .setDelimiter('_')
+
+# CONVERT back to string
+finisher = Finisher() \
+     .setInputCols(['ngrams'])
+
+# CREATE pipeline
+sparknlp_pipeline = Pipeline().setStages([documentAssembler, tokenizer, normalizer, lemmatizer, stopwords_cleaner, ngrammer, finisher])
+```
+
+<br>
+<b>2. Vectorization Pipeline</b><br>
+
+```python
+# CREATE column names
+string_cols = ['lang', 'tag']
+string_cols_map = [(col, col+'_ix') for col in string_cols]
+predictors = [col[1] for col in string_cols_map] + ['ngram_idf']
+
+
+# VECTORIZE
+cv = CountVectorizer(inputCol='finished_ngrams', outputCol='ngram_cv')
+
+# INVERSE DENSE FREQUENCY
+idf = IDF(inputCol='ngram_cv', outputCol='ngram_idf', minDocFreq=8) # minDocFreq: remove sparse terms
+
+# INDEX non-text string cols
+si = [StringIndexer(inputCol = col[0], outputCol = col[1]) for col in string_cols_map]
+
+# COMBINE language index, tag index, and idf-transformed word vectors
+va = VectorAssembler(inputCols = [*predictors] , outputCol='features')
+
+# CREATE pipeline
+featurizer_pipeline = Pipeline(stages = [cv, idf, *si, va])
+
+```
+
+<br>
+<b>3. Model development</b><br>
+
+```python
+
+# INITIALIZE parameters dictionary
+xgbParams = dict(
+    missing=0.0,
+    objective="multi:softmax",
+    num_workers=1,               # Set this to 1. Parallelization is done in grid search
+    featuresCol='features',
+    labelCol='label'
+)
+
+# INITIALIZE XGBoost
+xgb = XgboostClassifier(**xgbParams)
+
+# CREATE XGBoost parameters to gridsearch
+learning_rate = [1.0, 0.5, 0.1]
+max_depth = [9, 12]
+min_child_weight = [1, 0.5, 0]
+subsample = [0.2, 0.4, 0.6,]
+n_estimators = [50, 75, 100]
+
+# INITIALIZE grid object
+param_grid = (
+  ParamGridBuilder()
+    .addGrid(xgb.max_depth, max_depth)
+    .addGrid(xgb.n_estimators, n_estimators)
+    .addGrid(xgb.subsample, subsample)
+    .addGrid(xgb.min_child_weight, min_child_weight)
+    .addGrid(xgb.learning_rate, learning_rate)
+    .build()
+)
+
+# CREATE cross validation object
+cv = CrossValidator(
+    parallelism=36,    # NOTE. Set this parameter to the number of workers in your Databricks enviornment
+    estimator=xgb,
+    estimatorParamMaps=param_grid,
+    evaluator=evaluator_f1,
+    numFolds=5,
+    seed=42069,
+    
+)
+
+
+# RUN grid search with MLFlow
+with mlflow.start_run(run_name = 'XGBoost_sentiment_3'):
+    model = cv.fit(sdf_train_prepared) # This generates a bunch of models and scores them
+    
+    # GET BEST MODEL PARAMS
+    messy_param_dict = model.bestModel.extractParamMap()
+    best_params = {}
+    
+    # CREATE clean dictionary with model params
+    for param, value in messy_param_dict.items():
+        best_params[param.name] = value
+    
+    # SAVE params
+    mlflow.log_params(best_params)  # save the parameters to logs
+    
+    # SAVE best model
+    mlflow.spark.log_model(model.bestModel, 'XGBoost_best_model')
+    
+    # SAVE best model scores
+    metrics = dict(f1 = evaluator_f1.evaluate(model.bestModel.transform(sdf_test_prepared)),
+                   logloss = evaluator_logloss.evaluate(model.bestModel.transform(sdf_test_prepared)),
+                   recall = evaluator_recall.evaluate(model.bestModel.transform(sdf_test_prepared))
+                    )
+    # LOG metrics
+    mlflow.log_metrics(metrics)
+
+```
 
 
 <br><br>
